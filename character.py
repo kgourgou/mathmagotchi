@@ -9,65 +9,50 @@ class Character:
     """Manages the ASCII art character and its moods"""
 
     MOODS = {
-        "energetic": """
-    ☕ ENERGIZED! ☕
+        "energetic": """☕ TIME FOR MATH! ☕
 
-      \\(^_^)/
-       |   |
-      /|   |\\
-     / |   | \\
-       =   =
+    /\\_/\\
+   ( ^.^ )
+    > ^ <
+   /|   |\\
 
-   Ready for math!
-        """,
+ Let's learn!""",
 
-        "thinking": """
-    🤔 PONDERING...
+        "thinking": """🤔 Hmm, interesting...
 
-       (o_o)
-       <| |>
-        | |
-       /   \\
-      =     =
+    /\\_/\\
+   ( o.o )
+    > ~ <
+   /     \\
 
-   Let me think...
-        """,
+ Deep thoughts...""",
 
-        "contemplative": """
-    💭 REFLECTING
+        "contemplative": """💭 Words of wisdom
 
-       (-_-)
-       <| |>
-        | |
-       /   \\
-      =     =
+    /\\_/\\
+   ( -.-)
+    > v <
+   /     \\
 
-   Wisdom time...
-        """,
+ So wise~""",
 
-        "sleepy": """
-    😴 SLEEPY...
+        "sleepy": """😴 Sleepy time...
 
-       (u_u)
-       <| |>
-        | |
-       /   \\
-      =     =
+    /\\_/\\
+   ( u.u )
+    > - <
+   /     \\
 
-   *yawn* Zzz...
-        """,
+ *yawns* zzz""",
 
-        "excited": """
-    🎉 EXCITED! 🎉
+        "excited": """✨ NEW PROBLEM! ✨
 
-       (★_★)
-       \\| |/
-        | |
-       /   \\
-      =     =
+    /\\_/\\
+   ( *.* )
+    > O <
+   /|   |\\
 
-   New problem!
-        """
+ So exciting!!"""
     }
 
     def __init__(self):

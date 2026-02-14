@@ -22,12 +22,14 @@ class MathStackClient:
             preferred_tags: List of preferred tags for problems
         """
         self.api_key = api_key
-        self.preferred_tags = preferred_tags or ["analysis", "real-analysis"]
+        self.preferred_tags = preferred_tags or ["analysis", "real-analysis", "calculus",
+                                                   "linear-algebra", "abstract-algebra",
+                                                   "probability", "combinatorics"]
         self.recent_question_ids: List[int] = []
-        self.max_recent = 20  # Track recent questions to avoid repeats
+        self.max_recent = 50  # Track more recent questions
         self.cache: List[Dict] = []
 
-    def fetch_problems(self, tag: str = None, min_score: int = 50, page_size: int = 30) -> List[Dict]:
+    def fetch_problems(self, tag: str = None, min_score: int = 20, page_size: int = 50) -> List[Dict]:
         """
         Fetch high-quality math problems from StackExchange
 
@@ -39,43 +41,62 @@ class MathStackClient:
         Returns:
             List of question dictionaries
         """
-        if tag is None:
-            tag = random.choice(self.preferred_tags)
+        all_problems = []
 
-        params = {
-            "site": "math.stackexchange.com",
-            "tagged": tag,
-            "sort": "votes",
-            "order": "desc",
-            "pagesize": page_size,
-            "filter": "withbody"  # Include question body
-        }
+        # Fetch from multiple tags for more variety
+        tags_to_fetch = random.sample(self.preferred_tags, min(3, len(self.preferred_tags)))
 
-        if self.api_key:
-            params["key"] = self.api_key
+        for tag in tags_to_fetch:
+            # Randomize between different sort methods for variety
+            sort_methods = ["votes", "activity"]
+            sort_method = random.choice(sort_methods)
 
-        try:
-            response = requests.get(
-                f"{self.BASE_URL}/search/advanced",
-                params=params,
-                timeout=10
-            )
-            response.raise_for_status()
+            # For votes, use different pages to get variety
+            page_number = random.randint(1, 10) if sort_method == "votes" else 1
 
-            data = response.json()
-            questions = data.get("items", [])
+            params = {
+                "site": "math.stackexchange.com",
+                "tagged": tag,
+                "sort": sort_method,
+                "order": "desc",
+                "page": page_number,
+                "pagesize": page_size,
+                "filter": "withbody"  # Include question body
+            }
 
-            # Filter by minimum score
-            filtered = [q for q in questions if q.get("score", 0) >= min_score]
+            if self.api_key:
+                params["key"] = self.api_key
 
-            return filtered
+            try:
+                response = requests.get(
+                    f"{self.BASE_URL}/search/advanced",
+                    params=params,
+                    timeout=10
+                )
+                response.raise_for_status()
 
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching from StackExchange: {e}")
-            return []
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return []
+                data = response.json()
+                questions = data.get("items", [])
+
+                # Use lower minimum score threshold for more variety
+                filtered = [q for q in questions if q.get("score", 0) >= min_score]
+                all_problems.extend(filtered)
+
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching from StackExchange: {e}")
+            except Exception as e:
+                print(f"Unexpected error: {e}")
+
+        # Remove duplicates based on question_id
+        seen_ids = set()
+        unique_problems = []
+        for problem in all_problems:
+            qid = problem.get("question_id")
+            if qid and qid not in seen_ids:
+                seen_ids.add(qid)
+                unique_problems.append(problem)
+
+        return unique_problems
 
     def get_random_problem(self, refresh_cache: bool = False) -> Optional[Dict]:
         """
@@ -87,9 +108,16 @@ class MathStackClient:
         Returns:
             Formatted problem dictionary or None
         """
-        # Refresh cache if needed
-        if not self.cache or refresh_cache:
+        # Refresh cache if needed or if we've seen most problems
+        seen_ratio = len(self.recent_question_ids) / max(len(self.cache), 1)
+        should_refresh = not self.cache or refresh_cache or seen_ratio > 0.7
+
+        if should_refresh:
+            print(f"Refreshing cache... (seen {len(self.recent_question_ids)}/{len(self.cache)} problems)")
             self.cache = self.fetch_problems()
+            # Clear some recent IDs when refreshing to allow old favorites to reappear
+            if len(self.recent_question_ids) > self.max_recent // 2:
+                self.recent_question_ids = self.recent_question_ids[-self.max_recent // 2:]
 
         if not self.cache:
             return None
@@ -100,10 +128,17 @@ class MathStackClient:
             if q.get("question_id") not in self.recent_question_ids
         ]
 
-        # If all problems have been shown, reset recent tracking
+        # If all problems have been shown, clear some old ones
         if not available_problems:
-            self.recent_question_ids.clear()
-            available_problems = self.cache
+            print("All problems shown, clearing old history...")
+            # Keep only the most recent 10
+            self.recent_question_ids = self.recent_question_ids[-10:] if len(self.recent_question_ids) > 10 else []
+            available_problems = [
+                q for q in self.cache
+                if q.get("question_id") not in self.recent_question_ids
+            ]
+            if not available_problems:
+                available_problems = self.cache
 
         # Select random problem
         problem = random.choice(available_problems)
@@ -115,6 +150,7 @@ class MathStackClient:
             if len(self.recent_question_ids) > self.max_recent:
                 self.recent_question_ids.pop(0)
 
+        print(f"Cache: {len(self.cache)} problems, Recent: {len(self.recent_question_ids)}, Available: {len(available_problems)}")
         return self.format_problem(problem)
 
     def format_problem(self, problem: Dict) -> Dict:
@@ -149,21 +185,26 @@ class MathStackClient:
     @staticmethod
     def clean_html(html_text: str) -> str:
         """
-        Clean HTML tags and entities from text
+        Clean and preserve HTML for MathJax rendering
 
         Args:
-            html_text: HTML text
+            html_text: HTML text from Stack Exchange
 
         Returns:
-            Plain text
+            Cleaned HTML suitable for display with MathJax
         """
-        # Remove HTML tags
-        text = re.sub(r'<[^>]+>', '', html_text)
+        # Unescape HTML entities first
+        text = unescape(html_text)
 
-        # Unescape HTML entities
-        text = unescape(text)
+        # Remove potentially dangerous tags but keep formatting
+        dangerous_tags = ['script', 'iframe', 'object', 'embed']
+        for tag in dangerous_tags:
+            text = re.sub(f'<{tag}[^>]*>.*?</{tag}>', '', text, flags=re.DOTALL | re.IGNORECASE)
 
-        # Remove excessive whitespace
+        # Convert some common Stack Exchange elements
+        text = re.sub(r'<pre><code>(.*?)</code></pre>', r'<pre>\1</pre>', text, flags=re.DOTALL)
+
+        # Clean up excessive whitespace within tags
         text = re.sub(r'\s+', ' ', text)
         text = text.strip()
 

@@ -5,8 +5,10 @@ description = "Your friendly mathematical companion - a Tamagotchi-style app for
 requires-python = ">=3.10"
 dependencies = [
     "PyQt6>=6.6.1",
+    "PyQt6-WebEngine>=6.6.0",
     "requests>=2.31.0",
     "pytz>=2024.1",
+    "pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
