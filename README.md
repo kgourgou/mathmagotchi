@@ -1,5 +1,7 @@
 # Mathmagotchi 🧮✨
 
+PS: Most of this README was written by Claude Code. <D-s>
+
 Your friendly mathematical companion - a Tamagotchi-style desktop app that combines the charm of a virtual pet with mathematical enrichment!
 
 ## Features
@@ -165,22 +167,3 @@ To get an API key:
 **Problem: Character doesn't match time of day**
 - Check the `timezone` setting in config.json
 - Make sure your system time is correct
-
-## Future Enhancements
-
-- Animation transitions between moods
-- Achievement system for daily engagement
-- Problem difficulty slider
-- Export favorite problems/quotes
-- Sound effects (optional)
-- Multiple character themes
-
-## License
-
-This project is open source and available for educational purposes.
-
-## Credits
-
-- Math problems from [Math StackExchange](https://math.stackexchange.com/)
-- Inspired by the classic Tamagotchi virtual pet
-- Built with PyQt6 and managed with uv
