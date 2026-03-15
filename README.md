@@ -37,7 +37,7 @@ cd mathmagotchi
 ```bash
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -e .
+uv pip install -r pyproject.toml
 ```
 
 3. **Install development dependencies (optional, for type checking)**:
